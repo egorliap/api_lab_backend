@@ -56,19 +56,25 @@ async def set_favorite_pair_conversion(
     new_pair = (currency_from, currency_to)
     if new_pair not in favorites:
         favorites.append(new_pair)
+    try:
+        response.set_cookie(key="favorites", value=json.dumps(favorites))
+    except Exception as e:
+        HTTPException(status_code=400, detail=str(e))
+    return {"status": "ok", "message": "Pair added to cookies"}
 
-    response.set_cookie(key="favorites", value=json.dumps(favorites))
 
-
-@router.get("/favorites/", description="Gets all pairs of currencies (added) from cookies")
+@router.get(
+    "/favorites/", description="Gets all pairs of currencies (added) from cookies"
+)
 async def get_favorites(favorites: str = Depends(get_favorites_from_cookie)):
-    favorites = []
+    favorites_list = []
     if favorites:
-        favorites = json.loads(favorites)
+        favorites_list = json.loads(favorites)
+        
 
     conversions = []
     async with ClientSession() as session:
-        for fav in favorites:
+        for fav in favorites_list:
             try:
                 resp = await Exchanger.get_pair_conversion(session, fav[0], fav[1], 1)
             except Exception:
